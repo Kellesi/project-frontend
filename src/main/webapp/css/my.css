@@ -1,0 +1,32 @@
+.players-table {
+    border: 1px solid black;
+}
+
+.header-cell {
+    border: 1px solid black;
+    padding: 5px;
+    width: fit-content;
+}
+
+.cell {
+    border: 1px solid black;
+    padding: 3px;
+}
+
+.active-pagination-button {
+    color: crimson;
+}
+
+.edit-button, .delete-button {
+    width: auto;
+    height: auto;
+}
+
+.edit-img, .delete-img {
+    width: 30px;
+    height: 30px;
+}
+
+.hidden{
+    visibility: hidden;
+}

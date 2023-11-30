@@ -5,8 +5,243 @@
     <link href="/css/my.css" rel="stylesheet">
 </head>
 <body>
+
 <h1>RPG admin panel</h1>
 <h2>Accounts list:</h2>
 
+<div class="account-per-page">
+    <label for="acc-per-page">Count per page:</label>
+    <select class="acc-per-page" id="acc-per-page"></select>
+</div>
+
+<table class="players-table">
+    <thead>
+    <tr class="players-table-row">
+        <th class="header-cell">#</th>
+        <th class="header-cell">Name</th>
+        <th class="header-cell">Title</th>
+        <th class="header-cell">Race</th>
+        <th class="header-cell">Profession</th>
+        <th class="header-cell">Level</th>
+        <th class="header-cell">Birthday</th>
+        <th class="header-cell">Banned</th>
+        <th class="header-cell">Edit</th>
+        <th class="header-cell">Delete</th>
+    </tr>
+    </thead>
+    <tbody class="players-table-body"></tbody>
+</table>
+
+<div>
+    <span>Pages:</span>
+    <span class="pagination-button"></span>
+</div>
+
+<script>
+    const PROFESSION_ARR = ['WARRIOR', 'ROGUE', 'SORCERER', 'CLERIC', 'PALADIN', 'NAZGUL', 'WARLOCK', 'DRUID']
+    const RACE_ARR = ['HUMAN', 'DWARF', 'ELF', 'GIANT', 'ORC', 'TROLL', 'HOBBIT']
+    const BANNED_ARR = ['true', 'false']
+
+    let playersPerPage = 3
+    let currentPage = 0
+    let playerAmount = null
+    let pagesAmount = null
+
+    fillTable(0, playersPerPage)
+    getPlayersAmount()
+    fillSelector()
+
+    function getPlayersAmount() {
+        $.get('/rest/players/count', (amount) => {
+            playerAmount = amount
+
+            createPaginationButtons()
+        })
+    }
+
+    function createPaginationButtons() {
+        pagesAmount = playerAmount ? Math.ceil(playerAmount / playersPerPage) : 0
+
+        const $buttonsContainer = $('.pagination-button')[0]
+
+        Array.from($buttonsContainer.children).forEach(node => node.remove())
+        let paginationButtons = ''
+
+        for (let i = 1; i <= pagesAmount; i++) {
+            paginationButtons += `<button value="${i - 1}">${i}</button>`
+        }
+
+        $buttonsContainer.insertAdjacentHTML("beforeend", paginationButtons)
+        Array.from($buttonsContainer.children).forEach(button => button.addEventListener('click', switchPageChange))
+
+        markActivePageButton(currentPage)
+    }
+
+    function switchPageChange(e) {
+        let targetPage = e.currentTarget.value
+        markActivePageButton(targetPage)
+        currentPage = targetPage
+        fillTable(currentPage, playersPerPage)
+    }
+
+    function fillTable(pageNumber, pageSize) {
+        $.get(`/rest/players?pageNumber=${pageNumber}&pageSize=${pageSize}`, (players) => {
+            let $playersTableBody = $('.players-table-body')[0];
+            Array.from($playersTableBody.children).forEach(node => node.remove())
+            let htmlRows = ''
+            players.forEach((player) => {
+                htmlRows +=
+                    `<tr class="row" data-row-id="${player.id}">
+                         <td class="cell" align="center">${player.id}</td>
+                         <td class="cell" data-player-name>${player.name}</td>
+                         <td class="cell" data-player-title>${player.title}</td>
+                         <td class="cell" data-player-race>${player.race}</td>
+                         <td class="cell" data-player-profession>${player.profession}</td>
+                         <td class="cell" data-player-level>${player.level}</td>
+                         <td class="cell" data-player-birthday>${new Date(player.birthday).toLocaleDateString('uk')}</td>
+                         <td class="cell" data-player-banned>${player.banned}</td>
+                         <td class="cell" align="center">
+                             <button class="edit-button" value = ${player.id}>
+                                <img class="edit-img" src="../img/edit.png" alt="edit">
+                             </button>
+                         </td>
+                         <td class="cell" align="center">
+                             <button class="delete-button" value = ${player.id}>
+                                <img class="delete-img" src="../img/delete.png" alt="delete">
+                             </button>
+                         </td>
+                     </tr>`
+            })
+
+            $playersTableBody.insertAdjacentHTML("beforeend", htmlRows)
+            const deleteButtons = document.querySelectorAll('.delete-button');
+            deleteButtons.forEach(button => button.addEventListener('click', removeAccount))
+            const editButtons = document.querySelectorAll('.edit-button');
+            editButtons.forEach(button => button.addEventListener('click', editAccount))
+        })
+    }
+
+    function refreshTable(e, page=0) {
+        playersPerPage = e.currentTarget.value
+        fillTable(page, playersPerPage)
+        createPaginationButtons()
+        markActivePageButton(page)
+    }
+
+    function fillSelector() {
+        const $dropSelector = $('.acc-per-page')[0];
+        const dropOptions = createSelectOptions([3, 5, 10, 20], 3)
+
+        $dropSelector.addEventListener('change', refreshTable)
+        $dropSelector.insertAdjacentHTML("afterbegin", dropOptions)
+    }
+
+    function createSelectOptions(optionsArray, defaultValue) {
+        let options = ''
+
+        optionsArray.forEach(option =>
+            options += `<option ${defaultValue}===option&&'selected'> ${option}</option>`)
+
+        return options
+    }
+
+    function markActivePageButton(buttonIndex = 0) {
+        const $buttonsContainer = document.querySelector('.pagination-button')
+        const $currentButton = Array.from($buttonsContainer.children)[currentPage]
+        const $targetButton = Array.from($buttonsContainer.children)[buttonIndex]
+
+        if ($currentButton!=null) {
+            $currentButton.classList.remove('active-pagination-button')
+        }
+        $targetButton.classList.add('active-pagination-button')
+    }
+
+    function removeAccount(e) {
+        const playerID = e.currentTarget.value
+
+        $.ajax({
+            url: `/rest/players/${playerID}`,
+            type: 'DELETE',
+            success: function () {
+                getPlayersAmount()
+                markActivePageButton(currentPage)
+                fillTable(currentPage, playersPerPage)
+            }
+        })
+    }
+
+    function editAccount(e) {
+        const playerID = e.currentTarget.value
+        const $currentRow = document.querySelector(`.row[data-row-id='${playerID}']`)
+        const $deleteButton = $currentRow.querySelector('.delete-button');
+        const $editImage = $currentRow.querySelector('.edit-button img')
+        const $name = $currentRow.querySelector('[data-player-name]')
+        const $title = $currentRow.querySelector('[data-player-title]')
+        const $race = $currentRow.querySelector('[data-player-race]')
+        const $profession = $currentRow.querySelector('[data-player-profession]')
+        const $banned = $currentRow.querySelector('[data-player-banned]')
+
+        $editImage.src = "../img/save.png"
+        $editImage.addEventListener('click', () => {
+            const params = {
+                playerID: playerID,
+                data: {
+                    name: $name.childNodes[0].getAttribute('data-value'),
+                    title: $title.childNodes[0].getAttribute('data-value'),
+                    race: $race.childNodes[0].getAttribute('data-value'),
+                    profession: $profession.childNodes[0].getAttribute('data-value'),
+                    banned: $banned.childNodes[0].getAttribute('data-value')
+                }
+            }
+            savePlayerChanges(params)
+        })
+
+        $deleteButton.classList.add('hidden')
+        $name.childNodes[0].replaceWith(createInput($name.innerHTML))
+        $title.childNodes[0].replaceWith(createInput($title.innerHTML))
+        $race.childNodes[0].replaceWith(createSelect(RACE_ARR, $race.innerHTML))
+        $profession.childNodes[0].replaceWith(createSelect(PROFESSION_ARR, $profession.innerHTML))
+        $banned.childNodes[0].replaceWith(createSelect(BANNED_ARR, $banned.innerHTML))
+    }
+
+    function savePlayerChanges({playerID, data}) {
+        $.ajax({
+            url: `/rest/players/${playerID}`,
+            type: 'POST',
+            data: JSON.stringify(data),
+            dataType: "json",
+            contentType: "application/json",
+            success: function () {
+                getPlayersAmount()
+                fillTable(currentPage, playersPerPage)
+                markActivePageButton(currentPage)
+            }
+        })
+    }
+
+    function createInput(value) {
+        const $htmlInputElement = document.createElement('input');
+        $htmlInputElement.setAttribute('type', 'text')
+        $htmlInputElement.setAttribute('value', value)
+        $htmlInputElement.setAttribute('data-value', value)
+        $htmlInputElement.addEventListener('input', e => {
+            $htmlInputElement.setAttribute('data-value', `${e.currentTarget.value}`)
+        })
+        return $htmlInputElement
+    }
+
+    function createSelect(optionsArray, defaultValue) {
+        const $options = createSelectOptions(optionsArray, defaultValue);
+        const $selectElement = document.createElement('select');
+
+        $selectElement.insertAdjacentHTML("afterbegin", $options)
+        $selectElement.value = defaultValue
+        $selectElement.setAttribute('data-value', defaultValue)
+        $selectElement.addEventListener('change', e => {
+            $selectElement.setAttribute('data-value', e.currentTarget.value)
+        })
+        return $selectElement
+    }
+</script>
 </body>
 </html>
