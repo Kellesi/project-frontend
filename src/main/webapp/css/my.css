@@ -1,25 +1,51 @@
 .players-table {
     border: 1px solid black;
+    border-radius: 5px;
+    margin-top: 3px;
+}
+
+h1, h2{
+    color: darkgreen;
+}
+body{
+    font-family: Garamond, serif;
 }
 
 .header-cell {
+    align-content: center;
+    background-color: #ffd6c6;
     border: 1px solid black;
+    border-radius: 5px;
     padding: 5px;
     width: fit-content;
 }
 
 .cell {
     border: 1px solid black;
+    border-radius: 3px;
     padding: 3px;
 }
 
 .active-pagination-button {
-    color: crimson;
+    color: #a83434;
+    background-color: papayawhip;
+
 }
 
 .edit-button, .delete-button {
     width: auto;
     height: auto;
+    border-color: white;
+    border-spacing: 1px;
+    background-color: white;
+    margin-top: 0px;
+}
+
+.save-button {
+    width: 100%;
+    background: lightgreen;
+    margin-top: 15px;
+    border-color: forestgreen;
 }
 
 .edit-img, .delete-img {
@@ -27,6 +53,33 @@
     height: 30px;
 }
 
-.hidden{
+.hidden {
     visibility: hidden;
+}
+
+.creation-wrapper {
+    width: max-content;
+    border: 3px solid lightsalmon;
+    border-radius: 15px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+button {
+    border-color: lightsalmon;
+    border-spacing: 1px;
+    border-radius: 10px;
+    background-color: white;
+    margin: 2px;
+    margin-top: 5px;
+}
+
+button:hover {
+    cursor: pointer;
+}
+
+.create-field{
+    display: flex;
+    justify-content: space-between;
+   margin: 3px;
 }

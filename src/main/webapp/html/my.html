@@ -75,6 +75,7 @@
     </div>
     <button class="save-button" onclick="saveNewPlayer()">Save</button>
 </div>
+
 <script>
     const PROFESSION_ARR = ['WARRIOR', 'ROGUE', 'SORCERER', 'CLERIC', 'PALADIN', 'NAZGUL', 'WARLOCK', 'DRUID']
     const RACE_ARR = ['HUMAN', 'DWARF', 'ELF', 'GIANT', 'ORC', 'TROLL', 'HOBBIT']
@@ -103,14 +104,17 @@
     function getPlayersAmount() {
         $.get('/rest/players/count', (amount) => {
             playerAmount = amount
-
+            getPagesAmount()
             createPaginationButtons()
         })
     }
 
-    function createPaginationButtons() {
+    function getPagesAmount() {
         pagesAmount = playerAmount ? Math.ceil(playerAmount / playersPerPage) : 0
+    }
 
+    function createPaginationButtons() {
+        getPagesAmount()
         const $buttonsContainer = $('.pagination-button')[0]
 
         Array.from($buttonsContainer.children).forEach(node => node.remove())
@@ -123,6 +127,9 @@
         $buttonsContainer.insertAdjacentHTML("beforeend", paginationButtons)
         Array.from($buttonsContainer.children).forEach(button => button.addEventListener('click', switchPageChange))
 
+        if (pagesAmount <= currentPage) {
+            currentPage = pagesAmount - 1
+        }
         markActivePageButton(currentPage)
     }
 
@@ -172,8 +179,8 @@
 
     function refreshTable(e, page = 0) {
         playersPerPage = e.currentTarget.value
-        fillTable(page, playersPerPage)
         createPaginationButtons()
+        fillTable(page, playersPerPage)
         markActivePageButton(page)
     }
 
@@ -205,13 +212,11 @@
 
     function removeAccount(e) {
         const playerID = e.currentTarget.value
-
         $.ajax({
             url: `/rest/players/${playerID}`,
             type: 'DELETE',
             success: function () {
                 getPlayersAmount()
-                markActivePageButton(currentPage)
                 fillTable(currentPage, playersPerPage)
                 alert("Player has been removed")
             }
