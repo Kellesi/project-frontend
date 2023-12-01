@@ -36,11 +36,49 @@
     <span>Pages:</span>
     <span class="pagination-button"></span>
 </div>
+<div class="creation-wrapper">
+    <h2>Create new account:</h2>
 
+    <div class="create-field">
+        <label for="create-name-input">Name:</label>
+        <input id="create-name-input" type="text" data-create-name/>
+    </div>
+
+    <div class="create-field">
+        <label for="create-title-input">Title:</label>
+        <input id="create-title-input" type="text" data-create-title/>
+    </div>
+
+    <div class="create-field">
+        <label for="create-race-select">Race:</label>
+        <select id="create-race-select" data-create-race></select>
+    </div>
+
+    <div class="create-field">
+        <label for="create-profession-select">Profession:</label>
+        <select id="create-profession-select" data-create-profession></select>
+    </div>
+
+    <div class="create-field">
+        <label for="create-level-input">Level:</label>
+        <input id="create-level-input" data-create-level/>
+    </div>
+
+    <div class="create-field">
+        <label for="create-birthday-input">Birthday:</label>
+        <input id="create-birthday-input" type="date" data-create-birthday/>
+    </div>
+
+    <div class="create-field">
+        <label for="create-banned-select">Banned:</label>
+        <select id="create-banned-select" data-create-banned></select>
+    </div>
+    <button class="save-button" onclick="saveNewPlayer()">Save</button>
+</div>
 <script>
     const PROFESSION_ARR = ['WARRIOR', 'ROGUE', 'SORCERER', 'CLERIC', 'PALADIN', 'NAZGUL', 'WARLOCK', 'DRUID']
     const RACE_ARR = ['HUMAN', 'DWARF', 'ELF', 'GIANT', 'ORC', 'TROLL', 'HOBBIT']
-    const BANNED_ARR = ['true', 'false']
+    const BANNED_ARR = ['false', 'true']
 
     let playersPerPage = 3
     let currentPage = 0
@@ -50,6 +88,17 @@
     fillTable(0, playersPerPage)
     getPlayersAmount()
     fillSelector()
+    initPlayerCreationForm()
+
+    function initPlayerCreationForm() {
+        const $race = document.querySelector('[data-create-race]');
+        const $profession = document.querySelector('[data-create-profession]');
+        const $banned = document.querySelector('[data-create-banned]');
+
+        $race.insertAdjacentHTML("afterbegin", createSelectOptions(RACE_ARR, RACE_ARR[0]))
+        $profession.insertAdjacentHTML("afterbegin", createSelectOptions(PROFESSION_ARR, PROFESSION_ARR[0]))
+        $banned.insertAdjacentHTML("afterbegin", createSelectOptions(BANNED_ARR, BANNED_ARR[0]))
+    }
 
     function getPlayersAmount() {
         $.get('/rest/players/count', (amount) => {
@@ -121,7 +170,7 @@
         })
     }
 
-    function refreshTable(e, page=0) {
+    function refreshTable(e, page = 0) {
         playersPerPage = e.currentTarget.value
         fillTable(page, playersPerPage)
         createPaginationButtons()
@@ -150,9 +199,7 @@
         const $currentButton = Array.from($buttonsContainer.children)[currentPage]
         const $targetButton = Array.from($buttonsContainer.children)[buttonIndex]
 
-        if ($currentButton!=null) {
-            $currentButton.classList.remove('active-pagination-button')
-        }
+        $currentButton.classList.remove('active-pagination-button')
         $targetButton.classList.add('active-pagination-button')
     }
 
@@ -166,6 +213,7 @@
                 getPlayersAmount()
                 markActivePageButton(currentPage)
                 fillTable(currentPage, playersPerPage)
+                alert("Player has been removed")
             }
         })
     }
@@ -215,8 +263,45 @@
                 getPlayersAmount()
                 fillTable(currentPage, playersPerPage)
                 markActivePageButton(currentPage)
+                alert("Changes has been saved")
             }
         })
+    }
+
+    function saveNewPlayer() {
+        const data = {
+            name: document.querySelector('[data-create-name]').value,
+            title: document.querySelector('[data-create-title]').value,
+            race: document.querySelector('[data-create-race]').value,
+            profession: document.querySelector('[data-create-profession]').value,
+            level: document.querySelector('[data-create-level]').value,
+            birthday: new Date(document.querySelector('[data-create-birthday]').value).getTime(),
+            banned: document.querySelector('[data-create-banned]').value,
+        }
+        $.ajax({
+            url: `/rest/players`,
+            type: 'POST',
+            data: JSON.stringify(data),
+            dataType: "json",
+            contentType: "application/json",
+            success: function () {
+                getPlayersAmount()
+                fillTable(currentPage, playersPerPage)
+                markActivePageButton(currentPage)
+                alert("New player added successfully")
+                clearNewPlayerForm()
+            }
+        })
+    }
+
+    function clearNewPlayerForm() {
+        document.querySelector('[data-create-name]').value = ""
+        document.querySelector('[data-create-title]').value = ""
+        document.querySelector('[data-create-race]').value = ""
+        document.querySelector('[data-create-profession]').value = ""
+        document.querySelector('[data-create-level]').value = ""
+        document.querySelector('[data-create-birthday]').value = ""
+        document.querySelector('[data-create-banned]').value = ""
     }
 
     function createInput(value) {
